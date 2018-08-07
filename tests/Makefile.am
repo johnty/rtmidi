@@ -1,7 +1,10 @@
 
-noinst_PROGRAMS = midiprobe midiout qmidiin cmidiin sysextest midiclock_in midiclock_out
+noinst_PROGRAMS = loopback midiprobe midiout qmidiin cmidiin sysextest midiclock_in midiclock_out
 
 AM_CXXFLAGS = -Wall -I$(top_srcdir)
+
+loopback_SOURCES = loopback.cpp
+loopback_LDADD = $(top_builddir)/librtmidi.la
 
 midiprobe_SOURCES = midiprobe.cpp
 midiprobe_LDADD = $(top_builddir)/librtmidi.la
