@@ -2,8 +2,9 @@
 //  loopback.cpp
 //  by johnty 2018 info@johnty.ca 
 //
-//  MIDI roundtrip latency tester 
-//  mode 1: sender - sends a midi message, and times until a message is received
+//  MIDI roundtrip latency tester. for testing performance of a
+//  send/receive pair.
+//  mode 1: sender - sends a midi message, and prints out time until a message is received
 //  mode 2: receiver - sends a message back when a message is received 
 //
 //*****************************************//
@@ -16,6 +17,10 @@
 
 
 struct timeval t0, t1;
+int mode = 0;
+
+RtMidiIn *midiin = 0;
+RtMidiOut *midiout = 0;
 
 void usage( void ) {
   // Error function in case of incorrect command-line
@@ -33,9 +38,21 @@ void mycallback( double deltatime, std::vector< unsigned char > *message, void *
   if ( nBytes > 0 )
     std::cout << "stamp = " << deltatime << std::endl;
   */
-  gettimeofday(&t1, NULL);
-  long elapsed = 1000000*(t1.tv_sec-t0.tv_sec) + t1.tv_usec - t0.tv_usec;
-  std::cout<<"since t0 = " << elapsed <<"\n";
+
+  if (mode == 0) { //sender: calculate time since last send
+                  // (assume it actually happened...)
+     gettimeofday(&t1, NULL);
+     long elapsed = 1000000*(t1.tv_sec-t0.tv_sec) + t1.tv_usec - t0.tv_usec;
+     std::cout<<"since t0 = " << elapsed <<"\n";
+  }
+  else { //receiver: just send a message when we get a message!
+     unsigned char message[3];
+     message[0] = 144;
+     message[1] = 65;
+     message[2] = 90;
+     //usleep(1000); //add value here for test
+     midiout->sendMessage(message, 3);
+  }
 }
 
 // This function should be embedded in a try/catch block in case of
@@ -47,11 +64,6 @@ bool chooseMidiOutPort( RtMidiOut *rtmidi );
 
 int main( int argc, char ** argv )
 {
-  RtMidiIn *midiin = 0;
-  RtMidiOut *midiout = 0;
-
-
-  int mode = 0;
 
   // Minimal command-line check.
   if ( argc > 2 ) usage();
@@ -80,7 +92,6 @@ int main( int argc, char ** argv )
     midiin = new RtMidiIn();
     midiout = new RtMidiOut();
    
-
     // Call function to select port.
     if ( chooseMidiInPort( midiin ) == false ) goto cleanup;
     std::cout<<"\n\n";
@@ -107,9 +118,10 @@ int main( int argc, char ** argv )
           gettimeofday(&t0, NULL);
           midiout->sendMessage(message, 3);
 
-          usleep(500*1000);
+          usleep(1000*1000);
        }
-       else {
+       else { //receiver: doesn't do anything until we receive something
+          // (see callback above)
        }
     }
 
